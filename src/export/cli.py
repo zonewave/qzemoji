@@ -8,8 +8,8 @@ import logging
 from pathlib import Path
 from typing import TypedDict, cast
 
-from .export_config import ExportConfig, validate_export_config
-from .export_xlsx import export_catalog
+from .config import ExportConfig, validate_export_config
+from .xlsx import export_catalog
 
 log = logging.getLogger(__name__)
 

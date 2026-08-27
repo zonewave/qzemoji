@@ -13,8 +13,8 @@ from typing import Self
 import aiohttp
 from bitarray import frozenbitarray
 
+from ..database import EidRow, EmojiRepository, EmojiRow
 from .config import CrawlConfig
-from .database import EidRow, EmojiRepository, EmojiRow
 from .downloader import DownloadOutcome, download_gif
 
 log = logging.getLogger(__name__)

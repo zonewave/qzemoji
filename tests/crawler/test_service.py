@@ -4,10 +4,10 @@ from pathlib import Path
 import pytest
 from bitarray import frozenbitarray
 
-from src import crawler
-from src.config import CrawlConfig
-from src.crawler import CrawlStats, classify_downloads, pending_batches
-from src.downloader import DownloadOutcome
+from src.crawler import service
+from src.crawler.config import CrawlConfig
+from src.crawler.downloader import DownloadOutcome
+from src.crawler.service import CrawlStats, classify_downloads, pending_batches
 
 
 @pytest.mark.parametrize("outcome", [DownloadOutcome.TIMED_OUT, DownloadOutcome.RETRY])
@@ -18,11 +18,11 @@ async def test_retryable_outcome_is_not_recorded_as_missing(
     async def fail_temporarily(*_args: object, **_kwargs: object) -> DownloadOutcome:
         return outcome
 
-    monkeypatch.setattr(crawler, "download_gif", fail_temporarily)
+    monkeypatch.setattr(service, "download_gif", fail_temporarily)
     db = tmp_path / "emoji.db"
     config = CrawlConfig(start=42, end=43, concurrency=1, timeout=1, db=db)
 
-    _ = await crawler.run(config)
+    _ = await service.run(config)
 
     with sqlite3.connect(db) as connection:
         assert connection.execute("SELECT COUNT(*) FROM Emoji").fetchone() == (0,)

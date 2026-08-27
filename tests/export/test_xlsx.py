@@ -5,8 +5,8 @@ from zipfile import ZipFile
 from PIL import Image
 
 from src.database import EmojiRepository
-from src.export_config import ExportConfig
-from src.export_xlsx import export_catalog
+from src.export.config import ExportConfig
+from src.export.xlsx import export_catalog
 
 
 def image_bytes(image_format: str, color: str) -> bytes:

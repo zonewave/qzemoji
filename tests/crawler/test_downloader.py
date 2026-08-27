@@ -5,7 +5,7 @@ from typing import Self, cast
 import aiohttp
 import pytest
 
-from src.downloader import DownloadOutcome, download_gif
+from src.crawler.downloader import DownloadOutcome, download_gif
 
 pytestmark = pytest.mark.asyncio
 

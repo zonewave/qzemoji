@@ -3,6 +3,6 @@
 以 Python 模块方式运行爬虫。
 """
 
-from .cli import main
+from .crawler.cli import main
 
 raise SystemExit(main())

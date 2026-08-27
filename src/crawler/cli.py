@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TypedDict, cast
 
 from .config import CrawlConfig, validate_config
-from .crawler import run
+from .service import run
 
 
 class _ParsedArgs(TypedDict):

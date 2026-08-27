@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from src.config import CrawlConfig, validate_config
+from src.crawler.config import CrawlConfig, validate_config
 
 
 def test_config_is_an_immutable_value() -> None:

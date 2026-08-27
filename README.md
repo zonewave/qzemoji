@@ -63,16 +63,12 @@ GIF 和 PNG 会保留原始数据；WebP 等格式会转换为静态 PNG。无�
 
 ## 代码结构
 
-- `crawl.py`：兼容现有命令的轻量入口。
-- `src/config.py`：不可变运行配置与纯函数校验。
-- `src/database.py`：Peewee 模型和 SQLite 读写操作。
-- `src/downloader.py`：单个 GIF 的下载及结果分类。
-- `src/crawler.py`：批处理和断点续跑流程。
-- `src/cli.py`：参数解析与命令行启动。
-- `src/export_config.py`：不可变导出配置与统计值。
-- `src/export_images.py`：导出前的纯图片转换与布局选项计算。
-- `src/export_xlsx.py`：分页 Excel 图册的写入编排。
-- `src/export_cli.py`：Excel 导出参数解析与命令行启动。
+- `crawl.py`：爬取命令的轻量入口。
+- `export_xlsx.py`：Excel 导出命令的轻量入口。
+- `src/crawler/`：爬取配置、单图下载、批处理服务和 CLI。
+- `src/database/`：Peewee 模型、持久化行类型和 SQLite 仓储。
+- `src/export/`：导出配置、纯图片处理、XLSX 编排和 CLI。
+- `tests/crawler/`、`tests/database/`、`tests/export/`：按功能模块镜像组织的测试。
 
 ## 开发检查
 

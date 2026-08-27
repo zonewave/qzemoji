@@ -1,6 +1,6 @@
-"""Peewee persistence for crawl results.
+"""Peewee repository for crawl results.
 
-使用 Peewee 持久化爬取结果。
+使用 Peewee 存储和查询爬取结果。
 """
 
 # Peewee builds queries dynamically and marks those APIs as unknown in its bundled stubs.
@@ -14,52 +14,9 @@ from typing import Self, cast, final
 
 from bitarray import frozenbitarray
 from bitarray.util import zeros
-from peewee import (
-    BlobField,
-    DatabaseProxy,
-    Default,
-    IntegerField,
-    Model,
-    SqliteDatabase,
-    TextField,
-)
+from peewee import SqliteDatabase
 
-database_proxy = DatabaseProxy()
-
-type EmojiRow = tuple[int, bytes]
-type EidRow = tuple[int]
-
-
-class BaseModel(Model):
-    """Bind crawler models through a runtime-configured database proxy.
-
-    通过运行时配置的数据库代理绑定爬虫模型。
-    """
-
-    @final
-    class Meta:
-        database: DatabaseProxy = database_proxy
-
-
-@final
-class Emoji(BaseModel):
-    eid: IntegerField[int] = IntegerField(primary_key=True)
-    text: TextField[str] = TextField(constraints=[Default("''")])
-    gif: BlobField[bytes | None] = BlobField(null=True)
-
-    @final
-    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
-        table_name: str = "Emoji"
-
-
-@final
-class Missing(BaseModel):
-    eid: IntegerField[int] = IntegerField(primary_key=True)
-    text: TextField[str] = TextField(constraints=[Default("''")])
-
-    @final
-    class Meta:  # pyright: ignore[reportIncompatibleVariableOverride]
-        table_name: str = "Missing"
+from .models import EidRow, Emoji, EmojiRow, Missing, database_proxy
 
 
 @final
