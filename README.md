@@ -45,6 +45,22 @@ uv run python crawl.py \
 nohup uv run python crawl.py --concurrency 32 > data/crawl.log 2>&1 &
 ```
 
+## 导出 Excel 图册
+
+将数据库中的图片导出为多工作表 XLSX 联系表：
+
+```bash
+uv run python export_xlsx.py \
+  --db data/emoji.db \
+  --output data/emoji-catalog.xlsx \
+  --pairs-per-row 8 \
+  --per-sheet 800 \
+  --image-size 48
+```
+
+GIF 和 PNG 会保留原始数据；WebP 等格式会转换为静态 PNG。无法解码的记录会写入
+`Errors` 工作表。
+
 ## 代码结构
 
 - `crawl.py`：兼容现有命令的轻量入口。
@@ -53,6 +69,10 @@ nohup uv run python crawl.py --concurrency 32 > data/crawl.log 2>&1 &
 - `src/downloader.py`：单个 GIF 的下载及结果分类。
 - `src/crawler.py`：批处理和断点续跑流程。
 - `src/cli.py`：参数解析与命令行启动。
+- `src/export_config.py`：不可变导出配置与统计值。
+- `src/export_images.py`：导出前的纯图片转换与布局选项计算。
+- `src/export_xlsx.py`：分页 Excel 图册的写入编排。
+- `src/export_cli.py`：Excel 导出参数解析与命令行启动。
 
 ## 开发检查
 

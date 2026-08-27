@@ -7,7 +7,7 @@
 # Peewee 动态构建查询，其内置类型存根将这些 API 标记为 unknown。
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from pathlib import Path
 from types import TracebackType
 from typing import Self, cast, final
@@ -123,6 +123,23 @@ class EmojiRepository:
             for (eid,) in rows:
                 resolved[eid - start] = True
         return frozenbitarray(resolved)
+
+    def iter_emojis(self) -> Iterator[EmojiRow]:
+        """Yield stored GIF payloads in ascending EID order without caching rows.
+
+        按 EID 升序产出已存储的图片数据，不缓存查询结果。
+        """
+        rows = cast(
+            Iterable[tuple[int, bytes | None]],
+            Emoji.select(Emoji.eid, Emoji.gif)
+            .where(Emoji.gif.is_null(False))
+            .order_by(Emoji.eid)
+            .tuples()
+            .iterator(),
+        )
+        for eid, payload in rows:
+            if payload is not None:
+                yield eid, payload
 
     def upsert_emoji(self, rows: Sequence[EmojiRow]) -> None:
         """Insert emoji rows and replace GIFs on EID conflicts.
