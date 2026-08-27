@@ -6,12 +6,12 @@
 import asyncio
 import logging
 from collections.abc import Iterator, Sequence
-from collections.abc import Set as AbstractSet
 from dataclasses import dataclass
 from itertools import islice
 from typing import Self
 
 import aiohttp
+from bitarray import frozenbitarray
 
 from .config import CrawlConfig
 from .database import EidRow, EmojiRepository, EmojiRow
@@ -67,14 +67,18 @@ class CrawlStats:
 def pending_batches(
     start: int,
     end: int,
-    skip: AbstractSet[int],
+    resolved: frozenbitarray,
     size: int,
 ) -> Iterator[tuple[int, ...]]:
     """Yield immutable batches of EIDs that still need processing.
 
     产出仍需处理的不可变 EID 批次。
     """
-    pending = (eid for eid in range(start, end) if eid not in skip)
+    pending = (
+        eid
+        for eid, is_resolved in zip(range(start, end), resolved, strict=True)
+        if not is_resolved
+    )
     while batch := tuple(islice(pending, size)):
         yield batch
 
@@ -127,14 +131,15 @@ async def probe_batch(
 async def run(config: CrawlConfig) -> int:
     config.db.parent.mkdir(parents=True, exist_ok=True)
     with EmojiRepository(config.db) as repository:
-        skip = repository.load_skip()
+        resolved = repository.load_skip(config.start, config.end)
+        resolved_count = resolved.count(1)
 
         total = config.end - config.start
         log.info(
             "range=[%s,%s) to_skip=%s",
             config.start,
             config.end,
-            len(skip),
+            resolved_count,
         )
 
         semaphore = asyncio.Semaphore(config.concurrency)
@@ -146,7 +151,12 @@ async def run(config: CrawlConfig) -> int:
         stats = CrawlStats()
 
         async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
-            for eids in pending_batches(config.start, config.end, skip, config.concurrency):
+            for eids in pending_batches(
+                config.start,
+                config.end,
+                resolved,
+                config.concurrency,
+            ):
                 batch = await probe_batch(session, semaphore, eids)
                 repository.upsert_emoji(batch.emoji_rows)
                 repository.upsert_missing(batch.missing_rows)

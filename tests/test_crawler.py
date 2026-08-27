@@ -2,6 +2,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from bitarray import frozenbitarray
 
 from src import crawler
 from src.config import CrawlConfig
@@ -29,7 +30,12 @@ async def test_retryable_outcome_is_not_recorded_as_missing(
 
 
 def test_batch_transforms_are_immutable_values() -> None:
-    batches = pending_batches(start=1, end=5, skip={2}, size=2)
+    batches = pending_batches(
+        start=1,
+        end=5,
+        resolved=frozenbitarray("0100"),
+        size=2,
+    )
     assert tuple(batches) == ((1, 3), (4,))
 
     batch = classify_downloads(

@@ -10,8 +10,10 @@
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 from types import TracebackType
-from typing import Protocol, Self, cast, final
+from typing import Self, cast, final
 
+from bitarray import frozenbitarray
+from bitarray.util import zeros
 from peewee import (
     BlobField,
     DatabaseProxy,
@@ -21,35 +23,11 @@ from peewee import (
     SqliteDatabase,
     TextField,
 )
-from playhouse.migrate import SqliteMigrator  # pyright: ignore[reportMissingTypeStubs]
 
 database_proxy = DatabaseProxy()
 
 type EmojiRow = tuple[int, bytes]
 type EidRow = tuple[int]
-
-
-class _ColumnMetadata(Protocol):
-    """Typed subset of Peewee's SQLite column metadata.
-
-    Peewee SQLite 列元数据的有类型子集。
-    """
-
-    name: str
-    default: str | None
-
-
-class _MigrationOperation(Protocol):
-    """Typed interface implemented by delayed Peewee migrations.
-
-    Peewee 延迟迁移操作实现的有类型接口。
-    """
-
-    def run(self) -> None:
-        """Execute the delayed schema operation.
-
-        执行延迟的表结构操作。
-        """
 
 
 class BaseModel(Model):
@@ -100,13 +78,12 @@ class EmojiRepository:
         database_proxy.initialize(self.database)
 
     def __enter__(self) -> Self:
-        """Open the database, create tables, and ensure note defaults.
+        """Open the database and create missing tables.
 
-        打开数据库、创建数据表，并确保备注字段具有默认值。
+        打开数据库，并创建尚不存在的数据表。
         """
         _ = self.database.connect(reuse_if_open=True)
         self.database.create_tables([Emoji, Missing])
-        self._ensure_text_defaults()
         return self
 
     def __exit__(
@@ -122,42 +99,30 @@ class EmojiRepository:
         if not self.database.is_closed():
             _ = self.database.close()
 
-    def _ensure_text_defaults(self) -> None:
-        """Set an empty database default without changing stored notes.
+    def load_skip(self, start: int, end: int) -> frozenbitarray:
+        """Load resolved EIDs in ``[start, end)`` as an immutable bitmap.
 
-        将数据库默认值设为空字符串，不修改已存储的备注。
+        将 ``[start, end)`` 内已下载或已确认缺失的 EID 加载为不可变位图。
         """
-        migrator = SqliteMigrator(self.database)
-        for table in ("Emoji", "Missing"):
-            columns = cast(Iterable[_ColumnMetadata], self.database.get_columns(table))
-            text_column = next(column for column in columns if column.name == "text")
-            if text_column.default == "''":
-                continue
-
-            with migrator.migration_context():
-                if text_column.default is not None:
-                    drop_default = cast(
-                        _MigrationOperation,
-                        cast(object, migrator.drop_column_default(table, "text")),
-                    )
-                    drop_default.run()
-                add_default = cast(
-                    _MigrationOperation,
-                    cast(object, migrator.add_column_default(table, "text", "")),
-                )
-                add_default.run()
-
-    def load_skip(self) -> set[int]:
-        """Load EIDs already resolved as downloaded or missing.
-
-        加载已经确认下载成功或资源缺失的 EID。
-        """
-        emoji_ids = cast(
-            Iterable[EidRow],
-            Emoji.select(Emoji.eid).where(Emoji.gif.is_null(False)).tuples(),
+        resolved = zeros(end - start)
+        queries = (
+            Emoji.select(Emoji.eid).where(
+                Emoji.gif.is_null(False),
+                Emoji.eid >= start,
+                Emoji.eid < end,
+            ),
+            Missing.select(Missing.eid).where(
+                Missing.eid >= start,
+                Missing.eid < end,
+            ),
         )
-        missing_ids = cast(Iterable[EidRow], Missing.select(Missing.eid).tuples())
-        return {eid for (eid,) in emoji_ids} | {eid for (eid,) in missing_ids}
+        for query in queries:
+            # iterator() prevents Peewee from retaining every selected row.
+            # iterator() 避免 Peewee 缓存所有已读取的行。
+            rows = cast(Iterable[EidRow], query.tuples().iterator())
+            for (eid,) in rows:
+                resolved[eid - start] = True
+        return frozenbitarray(resolved)
 
     def upsert_emoji(self, rows: Sequence[EmojiRow]) -> None:
         """Insert emoji rows and replace GIFs on EID conflicts.

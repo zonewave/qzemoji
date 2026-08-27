@@ -5,6 +5,7 @@ description = "Resumable crawler for Qzone emoji GIFs"
 requires-python = ">=3.14,<3.15"
 dependencies = [
     "aiohttp>=3.13.3",
+    "bitarray>=3.10.1",
     "peewee>=4.4.0",
 ]
 
