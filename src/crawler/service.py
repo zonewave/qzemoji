@@ -97,14 +97,15 @@ def classify_downloads(
     retryable_errors = 0
 
     for eid, result in zip(eids, results, strict=True):
-        if result is DownloadOutcome.TIMED_OUT:
-            timed_out += 1
-        elif result is DownloadOutcome.RETRY:
-            retryable_errors += 1
-        elif result is DownloadOutcome.MISSING:
-            missing_rows.append((eid,))
-        else:
-            emoji_rows.append((eid, result))
+        match result:
+            case DownloadOutcome.TIMED_OUT:
+                timed_out += 1
+            case DownloadOutcome.RETRY:
+                retryable_errors += 1
+            case DownloadOutcome.MISSING:
+                missing_rows.append((eid,))
+            case bytes() as payload:
+                emoji_rows.append((eid, payload))
 
     return BatchResult(
         attempted=len(eids),
