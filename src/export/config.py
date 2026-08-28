@@ -5,7 +5,9 @@ XLSX 导出的不可变配置与统计。
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Self
+from typing import Literal, Self
+
+type EidFormat = Literal["number", "message"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,6 +22,7 @@ class ExportConfig:
     pairs_per_row: int = 8
     per_sheet: int = 800
     image_size: int = 48
+    eid_format: EidFormat = "number"
 
 
 @dataclass(frozen=True, slots=True)

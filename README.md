@@ -1,6 +1,45 @@
 # Qzone Emoji Crawler
 
-一个可断点续跑的 QQ 空间表情 GIF 爬虫。数据写入 SQLite：
+一个用于收集、整理和查找 QQ 空间表情的工具。它会按 EID 扫描表情资源，将结果保存到
+SQLite，并导出为带图片预览的 XLSX 图册。图册可以保留纯数字 EID，也可以生成
+`[em]e{数字}[/em]` 格式的消息代码，复制后直接在 K 歌聊天中发送。例如，EID
+`1000004` 的消息代码为：
+
+```text
+[em]e1000004[/em]
+```
+
+## XLSX 图册效果
+
+导出的工作簿按多个工作表分页展示，每个表情图片旁可以显示纯数字 EID，或显示可直接复制的
+完整消息代码。图册相当于一份可视化的表情代码索引，无需逐个尝试代码。
+
+![常规 EID 表情图册](docs/assets/readme_1.png)
+
+![1000000 以上 EID 的表情图册](docs/assets/readme_2.png)
+
+## 使用流程
+
+### 方式一：直接使用 Release 图册
+
+如果只想查找和发送表情，无需运行本项目：
+
+1. 在仓库的 GitHub Releases 页面下载纯数字版 `emoji-catalog.xlsx`，或消息代码版
+   `emoji-catalog-message.xlsx`。
+2. 打开图册，根据图片找到目标表情。
+3. 消息代码版可以直接复制单元格内容；纯数字版需要将 EID 代入 `[em]e{数字}[/em]`。
+
+### 方式二：自行抓取并生成图册
+
+如果需要自行更新数据或调整扫描范围：
+
+1. 运行爬虫，将可用表情和对应 EID 保存到 SQLite。
+2. 选择纯数字或消息代码格式，将 SQLite 数据库导出为 XLSX 图册。
+3. 打开生成的图册，根据图片查找并复制需要的表情代码。
+
+## 数据与断点续跑
+
+爬取结果写入 SQLite：
 
 - `Emoji(eid, text, gif)`：成功下载的 GIF。
 - `Missing(eid, text)`：服务器明确返回 HTTP 404 的 eid。
@@ -10,7 +49,7 @@
 数据库模型和查询使用轻量级 ORM [Peewee](https://docs.peewee-orm.com/) 管理，并兼容已有
 `Emoji`、`Missing` 表结构。
 
-## 运行
+## 自行抓取数据
 
 需要 Python 3.14.x。
 
@@ -45,9 +84,9 @@ uv run python crawl.py \
 nohup uv run python crawl.py --concurrency 32 > data/crawl.log 2>&1 &
 ```
 
-## 导出 Excel 图册
+## 导出 XLSX 图册
 
-将数据库中的图片导出为多工作表 XLSX 联系表：
+将数据库中的图片导出为多工作表 XLSX 图册。默认生成纯数字 EID 版本：
 
 ```bash
 uv run python export_xlsx.py \
@@ -55,11 +94,21 @@ uv run python export_xlsx.py \
   --output data/emoji-catalog.xlsx \
   --pairs-per-row 8 \
   --per-sheet 800 \
-  --image-size 48
+  --image-size 48 \
+  --eid-format number
 ```
 
-GIF 和 PNG 会保留原始数据；WebP 等格式会转换为静态 PNG。无法解码的记录会写入
-`Errors` 工作表。
+生成可直接复制的消息代码版本：
+
+```bash
+uv run python export_xlsx.py \
+  --db data/emoji.db \
+  --output data/emoji-catalog-message.xlsx \
+  --eid-format message
+```
+
+`number` 格式写入纯数字 EID；`message` 格式写入 `[em]e{eid}[/em]`。GIF 和 PNG 会保留
+原始数据；WebP 等格式会转换为静态 PNG。无法解码的记录会写入 `Errors` 工作表。
 
 ## 代码结构
 

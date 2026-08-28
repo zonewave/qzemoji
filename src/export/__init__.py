@@ -3,7 +3,7 @@
 XLSX 导出的公共 API。
 """
 
-from .config import ExportConfig, ExportStats
+from .config import EidFormat, ExportConfig, ExportStats
 from .xlsx import export_catalog
 
-__all__ = ["ExportConfig", "ExportStats", "export_catalog"]
+__all__ = ["EidFormat", "ExportConfig", "ExportStats", "export_catalog"]

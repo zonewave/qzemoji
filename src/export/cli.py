@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import TypedDict, cast
 
-from .config import ExportConfig, validate_export_config
+from .config import EidFormat, ExportConfig, validate_export_config
 from .xlsx import export_catalog
 
 log = logging.getLogger(__name__)
@@ -20,6 +20,7 @@ class _ParsedArgs(TypedDict):
     pairs_per_row: int
     per_sheet: int
     image_size: int
+    eid_format: EidFormat
 
 
 def parse_args() -> ExportConfig:
@@ -37,6 +38,12 @@ def parse_args() -> ExportConfig:
     _ = parser.add_argument("--pairs-per-row", type=int, default=8)
     _ = parser.add_argument("--per-sheet", type=int, default=800)
     _ = parser.add_argument("--image-size", type=int, default=48)
+    _ = parser.add_argument(
+        "--eid-format",
+        choices=("number", "message"),
+        default="number",
+        help="EID cell format: number or copyable chat message",
+    )
     values = cast(_ParsedArgs, cast(object, vars(parser.parse_args())))
     config = ExportConfig(**values)
     if error := validate_export_config(config):

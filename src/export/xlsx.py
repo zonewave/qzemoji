@@ -19,7 +19,7 @@ from xlsxwriter.format import Format
 from xlsxwriter.worksheet import Worksheet
 
 from ..database import EmojiRepository
-from .config import ExportConfig, ExportStats, validate_export_config
+from .config import EidFormat, ExportConfig, ExportStats, validate_export_config
 from .images import PreparedImage, image_options, prepare_image
 
 
@@ -66,8 +66,8 @@ def grid_position(index: int, pairs_per_row: int) -> GridPosition:
     pair = index % pairs_per_row
     return GridPosition(
         row=1 + index // pairs_per_row,
-        eid_column=pair * 2,
-        image_column=pair * 2 + 1,
+        eid_column=pair * 2 + 1,
+        image_column=pair * 2,
     )
 
 
@@ -93,12 +93,14 @@ def configure_catalog_sheet(
     worksheet.set_zoom(85)
     _ = worksheet.set_row_pixels(0, 24)
     for pair in range(config.pairs_per_row):
-        eid_column = pair * 2
-        image_column = eid_column + 1
-        _ = worksheet.set_column_pixels(eid_column, eid_column, 72)
+        image_column = pair * 2
+        eid_column = image_column + 1
+        eid_width = 144 if config.eid_format == "message" else 72
+        eid_header = "Message" if config.eid_format == "message" else "EID"
         _ = worksheet.set_column_pixels(image_column, image_column, config.image_size + 4)
-        _ = worksheet.write(0, eid_column, "EID", header_format)
+        _ = worksheet.set_column_pixels(eid_column, eid_column, eid_width)
         _ = worksheet.write(0, image_column, "Image", header_format)
+        _ = worksheet.write(0, eid_column, eid_header, header_format)
 
 
 def write_emoji(
@@ -107,13 +109,17 @@ def write_emoji(
     eid: int,
     payload: bytes,
     image_size: int,
+    eid_format: EidFormat,
 ) -> ExportOutcome:
     """Write one grid entry and return its immutable outcome.
 
     写入一个网格项，并返回不可变结果。
     """
     _ = worksheet.set_row_pixels(position.row, image_size + 4)
-    _ = worksheet.write_number(position.row, position.eid_column, eid)
+    if eid_format == "message":
+        _ = worksheet.write_string(position.row, position.eid_column, f"[em]e{eid}[/em]")
+    else:
+        _ = worksheet.write_number(position.row, position.eid_column, eid)
     try:
         image = prepare_image(payload)
         _ = worksheet.insert_image(
@@ -191,6 +197,7 @@ def export_catalog(config: ExportConfig) -> ExportStats:
                         eid,
                         payload,
                         config.image_size,
+                        config.eid_format,
                     )
                     if isinstance(outcome, ExportFailure):
                         failures.append(outcome)
