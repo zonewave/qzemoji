@@ -24,8 +24,8 @@ SQLite，并导出为带图片预览的 XLSX 图册。图册可以保留纯数�
 
 如果只想查找和发送表情，无需运行本项目：
 
-1. 在仓库的 GitHub Releases 页面下载纯数字版 `emoji-catalog.xlsx`，或消息代码版
-   `emoji-catalog-message.xlsx`。
+1. 在仓库的 [GitHub Releases](https://github.com/zonewave/qzempji/releases) 页面下载纯数字版
+   `emoji-catalog.xlsx`，或消息代码版 `emoji-catalog-message.xlsx`。
 2. 打开图册，根据图片找到目标表情。
 3. 消息代码版可以直接复制单元格内容；纯数字版需要将 EID 代入 `[em]e{数字}[/em]`。
 
